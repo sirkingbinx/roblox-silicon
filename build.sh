@@ -1,0 +1,1 @@
+pyinstaller --windowed --name "roblox-silicon Installer" --noconfirm app.py
