@@ -1,6 +1,6 @@
 import os
 
-class rsil_data:
+class DataFile:
     def __init__(self, fname: str, mode: int):
         self.filepath = fname
         self.filedata = {}

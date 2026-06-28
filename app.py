@@ -10,35 +10,55 @@ import sys
 import patcher
 
 patch_version = patcher.get_patch_version("/Applications/Roblox.app")
+patch_options = patcher.PatchConfig()
 
 root = Tk()
 root.title("roblox-silicon")
-root.geometry("300x375")
-
-combo = ttk.Combobox(root, values=patcher.all_patch_versions(), state="readonly")
-combo.set("Patch version")
-combo.pack(pady=20)
+root.geometry("335x375")
 
 def run():
     if not ((sys.platform == "darwin") and (platform.machine() == "arm64")):
         messagebox.showinfo("Unsupported", "apple-silicon is designed for M-series macOS computers.")
         return
 
-    apply_patch_button = Button(root, text="Apply Patch", command=apply_patch)
-    apply_patch_button.pack()
+    config_fields = [
+        key for key, value in vars(patch_options).items()
+        if not key.startswith('__') and not callable(value)
+    ]
 
-    if patch_version != None:
-        rem_patch_button = Button(root, text=f"Remove Patch (Version {patch_version})", command=remove_patch)
-        rem_patch_button.pack()
+    row = 0
+
+    for k in config_fields:
+        v: patcher.PatchOption = getattr(patch_options, k)
+
+        label = ttk.Label(root, text=v.display_name + ":")
+        label.grid(row=row, column=0, padx=5, pady=2, sticky="w")
+
+        combo = ttk.Combobox(root, values=v.options, state="readonly")
+        combo.grid(row=row, column=1, padx=5, pady=2)
+        combo.current(v.recommended)
+
+        def on_select(event):
+            v.value = combo.get()
+
+        combo.bind("<<ComboboxSelected>>", on_select)
+
+        row += 1
+    
+    apply_patch_button = Button(root, text="Apply Patch", command=apply_patch)
+    apply_patch_button.grid(row=row+1, column=0, padx=5, pady=2)
+
+    remove_patch_button = Button(root, text="Remove Patch", command=remove_patch)
+    remove_patch_button.grid(row=row+1, column=1, padx=5, pady=2)
 
     root.mainloop()
 
 def apply_patch():
-    patcher.patches[combo.get()].apply("/Applications/Roblox.app")
-    messagebox.showinfo("Installed", f"The game has been patched with roblox-silicon v{combo.get()}. You may run Roblox by running the roblox-silicon app (/Applications/roblox-silicon.app)")
+    patcher.apply("/Applications/Roblox.app", patch_options)
+    messagebox.showinfo("Installed", f"The game has been patched with roblox-silicon. You may run Roblox by running the roblox-silicon app (/Applications/roblox-silicon.app)")
 
 def remove_patch():
-    patcher.patches[patch_version].unapply("/Applications/Roblox.app")
+    patcher.unapply("/Applications/Roblox.app")
     messagebox.showinfo("Uninstalled", "The patch has been removed.")
 
 if __name__ == "__main__":
